@@ -1,6 +1,7 @@
 import baostock as bs
 import os
 import datetime
+from tqdm import tqdm
 
 
 def mkdir(directory):
@@ -22,26 +23,38 @@ class Downloader(object):
 
     def get_codes_by_date(self, date):
         print(date)
-        stock_rs = bs.query_all_stock(date)
+        stock_rs = bs.query_all_stock('2023-03-07')
         stock_df = stock_rs.get_data()
         print(stock_df)
         return stock_df
 
     def run(self):
         stock_df = self.get_codes_by_date(self.date_end)
-        for index, row in stock_df.iterrows():
+        for index, row in tqdm(stock_df.iterrows(), total=stock_df.shape[0]):
+            if os.path.exists(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', '')):
+                print(f'{row["code"]} {row["code_name"]} exist')
+                continue
             print(f'processing {row["code"]} {row["code_name"]}')
             df_code = bs.query_history_k_data_plus(row["code"], self.fields,
                                                    start_date=self.date_start,
                                                    end_date=self.date_end).get_data()
-            df_code.to_csv(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv', index=False)
+            df_code.to_csv(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', ''), index=False)
 
 
 if __name__ == '__main__':
-    mkdir('./stockdata/train')
-    downloader = Downloader(output_dir='./stockdata/train')
+    mkdir('D:/stockdata/train')
+    downloader = Downloader(output_dir='D:/stockdata/train')
     downloader.run()
 
-    mkdir('./stockdata/test')
-    downloader = Downloader(output_dir='./stockdata/test')
+    mkdir('D:/stockdata/test')
+    downloader = Downloader(output_dir='D:/stockdata/test')
     downloader.run()
+
+
+mkdir('D:/stockdata/train')
+downloader = Downloader(output_dir='D:/stockdata/train', date_start='1990-01-01', date_end='2023-01-31')
+downloader.run()
+
+mkdir('D:/stockdata/test')
+downloader = Downloader(output_dir='D:/stockdata/test', date_start='2023-02-01', date_end='2023-03-07')
+downloader.run()
