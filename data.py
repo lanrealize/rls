@@ -21,15 +21,17 @@ class Downloader(object):
         self.output_dir = output_dir
         self.fields = "date,code,open,high,low,close,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,psTTM,pcfNcfTTM,pbMRQ,isST"
 
-    def get_codes_by_date(self, date):
-        print(date)
-        stock_rs = bs.query_all_stock('2023-03-07')
+    def get_codes_by_date(self):
+        one_day = datetime.timedelta(days=1)
+        today = datetime.date.today()
+        yesterday = today - one_day
+        stock_rs = bs.query_all_stock(yesterday)
         stock_df = stock_rs.get_data()
         print(stock_df)
         return stock_df
 
     def run(self):
-        stock_df = self.get_codes_by_date(self.date_end)
+        stock_df = self.get_codes_by_date()
         for index, row in tqdm(stock_df.iterrows(), total=stock_df.shape[0]):
             if os.path.exists(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', '')):
                 print(f'{row["code"]} {row["code_name"]} exist')
