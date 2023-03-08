@@ -33,6 +33,8 @@ class Downloader(object):
     def run(self):
         stock_df = self.get_codes_by_date()
         for index, row in tqdm(stock_df.iterrows(), total=stock_df.shape[0]):
+            if 'bj' in row["code"]:
+                continue
             if os.path.exists(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', '')):
                 print(f'{row["code"]} {row["code_name"]} exist')
                 continue
@@ -45,11 +47,11 @@ class Downloader(object):
 
 if __name__ == '__main__':
     mkdir('D:/stockdata/train')
-    downloader = Downloader(output_dir='D:/stockdata/train')
+    downloader = Downloader(output_dir='D:/stockdata/train', date_start='1990-01-01', date_end='2023-01-31')
     downloader.run()
 
     mkdir('D:/stockdata/test')
-    downloader = Downloader(output_dir='D:/stockdata/test')
+    downloader = Downloader(output_dir='D:/stockdata/test', date_start='2023-02-01', date_end='2023-03-07')
     downloader.run()
 
 
