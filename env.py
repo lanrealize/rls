@@ -2,6 +2,8 @@ import random
 import gym
 from gym import spaces
 import numpy as np
+import pandas as pd
+
 
 MAX_ACCOUNT_BALANCE = 2147483647
 MAX_NUM_SHARES = 2147483647
@@ -36,13 +38,13 @@ class StockTradingEnv(gym.Env):
             self.df.loc[self.current_step, 'close'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'volume'] / MAX_VOLUME,
             self.df.loc[self.current_step, 'amount'] / MAX_AMOUNT,
-            self.df.loc[self.current_step, 'adjustflag'] / 10,
+            0 if pd.isnull(self.df.loc[self.current_step, 'turn'] / 10) else pd.isnull(self.df.loc[self.current_step, 'turn'] / 10),
             self.df.loc[self.current_step, 'tradestatus'] / 1,
             self.df.loc[self.current_step, 'pctChg'] / 100,
             self.df.loc[self.current_step, 'peTTM'] / 1e4,
-            self.df.loc[self.current_step, 'pbMRQ'] / 100,
             self.df.loc[self.current_step, 'psTTM'] / 100,
-            self.df.loc[self.current_step, 'pctChg'] / 1e3,
+            self.df.loc[self.current_step, 'pcfNcfTTM'] / 1e3,
+            self.df.loc[self.current_step, 'pbMRQ'] / 100,
             self.balance / MAX_ACCOUNT_BALANCE,
             self.max_net_worth / MAX_ACCOUNT_BALANCE,
             self.shares_held / MAX_NUM_SHARES,

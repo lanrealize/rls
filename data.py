@@ -19,7 +19,7 @@ class Downloader(object):
         self.date_start = date_start
         self.date_end = date_end
         self.output_dir = output_dir
-        self.fields = "date,code,open,high,low,close,volume,amount,adjustflag,turn,tradestatus,pctChg,peTTM,psTTM,pcfNcfTTM,pbMRQ,isST"
+        self.fields = "date,code,open,high,low,close,volume,amount,turn,tradestatus,pctChg,peTTM,psTTM,pcfNcfTTM,pbMRQ,isST"
 
     def get_codes_by_date(self):
         one_day = datetime.timedelta(days=1)
@@ -33,16 +33,15 @@ class Downloader(object):
     def run(self):
         stock_df = self.get_codes_by_date()
         for index, row in tqdm(stock_df.iterrows(), total=stock_df.shape[0]):
-            if 'bj' in row["code"]:
-                continue
-            if os.path.exists(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', '')):
-                print(f'{row["code"]} {row["code_name"]} exist')
-                continue
-            print(f'processing {row["code"]} {row["code_name"]}')
-            df_code = bs.query_history_k_data_plus(row["code"], self.fields,
-                                                   start_date=self.date_start,
-                                                   end_date=self.date_end, adjustflag='2').get_data()
-            df_code.to_csv(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', ''), index=False)
+            if 'sh' in row["code"]:
+                if os.path.exists(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', '')):
+                    print(f'{row["code"]} {row["code_name"]} exist')
+                    continue
+                print(f'processing {row["code"]} {row["code_name"]}')
+                df_code = bs.query_history_k_data_plus(row["code"], self.fields,
+                                                       start_date=self.date_start,
+                                                       end_date=self.date_end, adjustflag='2').get_data()
+                df_code.to_csv(f'{self.output_dir}/{row["code"]}.{row["code_name"]}.csv'.replace('*', ''), index=False)
 
 
 if __name__ == '__main__':
