@@ -4,6 +4,8 @@ import pandas as pd
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3 import PPO
 from env import StockTradingEnv
+import torch as th
+from stable_baselines3.common.policies import ActorCriticPolicy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +24,10 @@ def stock_trade(stock_file):
 
     env = DummyVecEnv([lambda: StockTradingEnv(df)])
 
-    model = PPO("MlpPolicy", env, verbose=0, tensorboard_log='./log')
+    policy_kwargs = dict(activation_fn=th.nn.Sigmoid,
+                         net_arch=dict(pi=[64, 64], vf=[64, 64]))
+    model = PPO("MlpPolicy", env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log='./log')
+    model.policy.activation_fn = th.nn.Sigmoid
     model.learn(total_timesteps=int(1e4))
 
     df_test = pd.read_csv(stock_file.replace('train', 'test'))
