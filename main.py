@@ -16,6 +16,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 def stock_trade(stock_file):
     day_profits = []
+
     df = pd.read_csv(stock_file)
     df = df.sort_values('date')
 
@@ -50,7 +51,7 @@ def test_a_stock_trade(stock_code):
 
     daily_profits = stock_trade(stock_file)
     fig, ax = plt.subplots()
-    ax.plot(daily_profits, '-o', label=stock_code, marker='o', ms=10, alpha=0.7, mfc='orange')
+    ax.plot(daily_profits, label=stock_code, marker='o', ms=10, alpha=0.7, mfc='orange')
     ax.grid()
     plt.xlabel('step')
     plt.ylabel('profit')
@@ -79,4 +80,4 @@ def multi_stock_trade():
 
 
 if __name__ == '__main__':
-    test_a_stock_trade('sh.601800')
+    test_a_stock_trade('sh.601808')

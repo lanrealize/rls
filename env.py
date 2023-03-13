@@ -26,9 +26,11 @@ class StockTradingEnv(gym.Env):
         self.df = df
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
-        self.action_space = spaces.Box(low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
+        self.action_space = spaces.Box(low=np.array([0, 0], dtype=np.float16),
+                                       high=np.array([3, 1], dtype=np.float16),
+                                       dtype=np.float16)
 
-        self.observation_space = spaces.Box(low=0, high=1, shape=(19,), dtype=np.float16)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(19,), dtype=np.float32)
 
     def _next_observation(self):
         obs = np.array([
