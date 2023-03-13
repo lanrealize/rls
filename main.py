@@ -31,6 +31,22 @@ def stock_trade(stock_file):
     obs = env.reset()
     for i in range(len(df_test) - 1):
         action, _states = model.predict(obs)
+
+        current_price = env.envs[0].df.loc[env.envs[0].current_step, "open"]
+        if action[0][0] < 1:
+            action_name = "buy"
+            total_possible = int(env.envs[0].balance / current_price)
+            shares_bought = int(total_possible * action[0][1])
+            additional_cost = shares_bought * current_price
+        elif action[0][0] < 2:
+            action_name = "sell"
+            additional_cost = int(env.envs[0].shares_held * action[0][1]) * current_price
+        else:
+            action_name = "hold"
+            additional_cost = ''
+
+        print('*'*50)
+        print(f"action: {action_name} amount: {additional_cost}")
         obs, rewards, done, info = env.step(action)
         profit = env.render()
         day_profits.append(profit)
@@ -67,7 +83,7 @@ def multi_stock_trade():
     group_result = []
 
     for code in range(start_code, start_code + max_num):
-        stock_file = find_file('./stockdata/train', str(code))
+        stock_file = find_file('d:/stockdata/train', str(code))
         if stock_file:
             try:
                 profits = stock_trade(stock_file)
@@ -81,3 +97,4 @@ def multi_stock_trade():
 
 if __name__ == '__main__':
     test_a_stock_trade('sh.601808')
+    # multi_stock_trade()

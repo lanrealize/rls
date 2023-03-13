@@ -58,8 +58,7 @@ class StockTradingEnv(gym.Env):
 
     def _take_action(self, action):
         # Set the current price to a random price within the time step
-        current_price = random.uniform(
-            self.df.loc[self.current_step, "open"], self.df.loc[self.current_step, "close"])
+        current_price = self.df.loc[self.current_step, "open"]
 
         action_type = action[0]
         amount = action[1]
@@ -73,7 +72,7 @@ class StockTradingEnv(gym.Env):
 
             self.balance -= additional_cost
             self.cost_basis = (
-                prev_cost + additional_cost) / (self.shares_held + shares_bought)
+                prev_cost + additional_cost) / (self.shares_held + shares_bought) if self.shares_held > 0 else 0
             self.shares_held += shares_bought
 
         elif action_type < 2:
@@ -106,6 +105,8 @@ class StockTradingEnv(gym.Env):
         delay_modifier = (self.current_step / MAX_STEPS)
 
         # profits
+        current_price = self.df.loc[self.current_step, "open"]
+        self.net_worth = self.balance + self.shares_held * current_price
         reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
         reward = 1 if reward > 0 else -100
 
@@ -140,7 +141,7 @@ class StockTradingEnv(gym.Env):
     def render(self, mode='human', close=False):
         # Render the environment to the screen
         profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        print('-'*30)
+        print('-'*50)
         print(f'Step: {self.current_step}')
         print(f'Balance: {self.balance}')
         print(f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})')
