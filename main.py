@@ -2,7 +2,7 @@ import os
 import pickle
 import pandas as pd
 from stable_baselines3.common.vec_env import DummyVecEnv
-from stable_baselines3 import PPO
+from stable_baselines3 import DQN
 from env import StockTradingEnv
 import torch as th
 from stable_baselines3.common.policies import ActorCriticPolicy
@@ -26,9 +26,9 @@ def stock_trade(stock_file):
 
     policy_kwargs = dict(activation_fn=th.nn.Sigmoid,
                          net_arch=dict(pi=[64, 64], vf=[64, 64]))
-    model = PPO("MlpPolicy", env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log='./log')
+    model = DQN("MlpPolicy", env, verbose=0, tensorboard_log='./log')
     model.policy.activation_fn = th.nn.Sigmoid
-    model.learn(total_timesteps=int(1e4))
+    model.learn(total_timesteps=int(len(df) - 1))
 
     df_test = pd.read_csv(stock_file.replace('train', 'test'))
 
@@ -38,20 +38,25 @@ def stock_trade(stock_file):
         action, _states = model.predict(obs)
 
         current_price = env.envs[0].df.loc[env.envs[0].current_step, "open"]
-        if action[0][0] < 1:
+        if action > 10:
             action_name = "buy"
-            total_possible = int(env.envs[0].balance / current_price)
-            shares_bought = int(total_possible * action[0][1])
-            additional_cost = shares_bought * current_price
-        elif action[0][0] < 2:
+
+            amount = (action - 10) * 50
+            possible_buy_amount = int(env.envs[0].balance / current_price)
+            trade_amount = amount if (
+                    possible_buy_amount > amount > - env.envs[0].shares_held) else possible_buy_amount if amount > possible_buy_amount else - env.envs[0].shares_held
+        elif action < 10:
             action_name = "sell"
-            additional_cost = int(env.envs[0].shares_held * action[0][1]) * current_price
+            amount = (action - 10) * 50
+            possible_buy_amount = int(env.envs[0].balance / current_price)
+            trade_amount = amount if (
+                    possible_buy_amount > amount > - env.envs[0].shares_held) else possible_buy_amount if amount > possible_buy_amount else - env.envs[0].shares_held
         else:
             action_name = "hold"
-            additional_cost = ''
+            trade_amount = ''
 
         print('*'*50)
-        print(f"action: {action_name} amount: {additional_cost}")
+        print(f"action: {action_name} amount: {trade_amount}")
         obs, rewards, done, info = env.step(action)
         profit = env.render()
         day_profits.append(profit)

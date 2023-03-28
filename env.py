@@ -26,11 +26,9 @@ class StockTradingEnv(gym.Env):
         self.df = df
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
-        self.action_space = spaces.Box(low=np.array([0, 0], dtype=np.float16),
-                                       high=np.array([3, 1], dtype=np.float16),
-                                       dtype=np.float16)
+        self.action_space = spaces.Discrete(21)
 
-        self.observation_space = spaces.Box(low=0, high=1, shape=(19,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(13,), dtype=np.float32)
 
     def _next_observation(self):
         obs = np.array([
@@ -47,70 +45,41 @@ class StockTradingEnv(gym.Env):
             self.df.loc[self.current_step, 'psTTM'] / 100,
             self.df.loc[self.current_step, 'pcfNcfTTM'] / 1e3,
             self.df.loc[self.current_step, 'pbMRQ'] / 100,
-            self.balance / MAX_ACCOUNT_BALANCE,
-            self.max_net_worth / MAX_ACCOUNT_BALANCE,
-            self.shares_held / MAX_NUM_SHARES,
-            self.cost_basis / MAX_SHARE_PRICE,
-            self.total_shares_sold / MAX_NUM_SHARES,
-            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
         ])
         return obs
 
     def _take_action(self, action):
-        # Set the current price to a random price within the time step
         current_price = self.df.loc[self.current_step, "open"]
 
-        action_type = action[0]
-        amount = action[1]
+        amount = (action - 10) * 50
 
-        if action_type < 1:
-            # Buy amount % of balance in shares
-            total_possible = int(self.balance / current_price)
-            shares_bought = int(total_possible * amount)
-            prev_cost = self.cost_basis * self.shares_held
-            additional_cost = shares_bought * current_price
+        possible_buy_amount = int(self.balance / current_price)
+        trade_amount = amount if (
+                    possible_buy_amount > amount > - self.shares_held) else possible_buy_amount if amount > possible_buy_amount else - self.shares_held
 
-            self.balance -= additional_cost
-            self.cost_basis = (
-                prev_cost + additional_cost) / (self.shares_held + shares_bought) if self.shares_held > 0 else 0
-            self.shares_held += shares_bought
+        trade_value = trade_amount * current_price
 
-        elif action_type < 2:
-            # Sell amount % of shares held
-            shares_sold = int(self.shares_held * amount)
-            self.balance += shares_sold * current_price
-            self.shares_held -= shares_sold
-            self.total_shares_sold += shares_sold
-            self.total_sales_value += shares_sold * current_price
-
-        self.net_worth = self.balance + self.shares_held * current_price
-
-        if self.net_worth > self.max_net_worth:
-            self.max_net_worth = self.net_worth
-
-        if self.shares_held == 0:
-            self.cost_basis = 0
+        self.balance += trade_value
+        self.shares_held += trade_amount
 
     def step(self, action):
-        # Execute one time step within the environment
         self._take_action(action)
         done = False
 
         self.current_step += 1
 
-        if self.current_step > len(self.df.loc[:, 'open'].values) - 1:
-            self.current_step = 0  # loop training
-            # done = True
-
-        delay_modifier = (self.current_step / MAX_STEPS)
+        if self.current_step > len(self.df.loc[:, 'open'].values) - 2:
+            done = True
 
         # profits
-        current_price = self.df.loc[self.current_step, "open"]
-        self.net_worth = self.balance + self.shares_held * current_price
-        reward = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        reward = 1 if reward > 0 else -100
+        price_before_trade = self.df.loc[self.current_step - 1, "open"]
+        price_after_trade = self.df.loc[self.current_step, "open"]
 
-        if self.net_worth <= 0:
+        reward = 0 if action == 0 else 1 if price_after_trade > price_before_trade and action > 10 or price_after_trade < price_before_trade and action < 10 else -100
+
+        self.total_worth = self.balance + self.shares_held * price_after_trade
+
+        if self.total_worth <= 0:
             done = True
 
         obs = self._next_observation()
@@ -120,12 +89,8 @@ class StockTradingEnv(gym.Env):
     def reset(self, new_df=None):
         # Reset the state of the environment to an initial state
         self.balance = INITIAL_ACCOUNT_BALANCE
-        self.net_worth = INITIAL_ACCOUNT_BALANCE
-        self.max_net_worth = INITIAL_ACCOUNT_BALANCE
+        self.total_worth = INITIAL_ACCOUNT_BALANCE
         self.shares_held = 0
-        self.cost_basis = 0
-        self.total_shares_sold = 0
-        self.total_sales_value = 0
 
         # pass test dataset to environment
         if new_df:
@@ -139,13 +104,11 @@ class StockTradingEnv(gym.Env):
         return self._next_observation()
 
     def render(self, mode='human', close=False):
-        # Render the environment to the screen
-        profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
         print('-'*50)
+        profit = self.total_worth - INITIAL_ACCOUNT_BALANCE
         print(f'Step: {self.current_step}')
         print(f'Balance: {self.balance}')
-        print(f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})')
-        print(f'Avg cost for held shares: {self.cost_basis} (Total sales value: {self.total_sales_value})')
-        print(f'Net worth: {self.net_worth} (Max net worth: {self.max_net_worth})')
+        print(f'Shares held: {self.shares_held}')
+        print(f'Total worth: {self.total_worth}')
         print(f'Profit: {profit}')
         return profit
