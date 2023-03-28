@@ -59,7 +59,7 @@ class StockTradingEnv(gym.Env):
 
         trade_value = trade_amount * current_price
 
-        self.balance += trade_value
+        self.balance -= trade_value
         self.shares_held += trade_amount
 
     def step(self, action):
