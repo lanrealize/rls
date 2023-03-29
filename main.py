@@ -17,8 +17,6 @@ plt.rcParams['axes.unicode_minus'] = False
 
 
 def stock_trade(stock_file):
-    day_profits = []
-
     df = pd.read_csv(stock_file)
     df = df.sort_values('date')
 
@@ -28,7 +26,7 @@ def stock_trade(stock_file):
                          net_arch=dict(pi=[64, 64], vf=[64, 64]))
     model = DQN("MlpPolicy", env, verbose=0, tensorboard_log='./log')
     model.policy.activation_fn = th.nn.Sigmoid
-    model.learn(total_timesteps=int(len(df) - 1))
+    model.learn(total_timesteps=int(len(df) - 2))
 
     df_test = pd.read_csv(stock_file.replace('train', 'test'))
 
@@ -58,11 +56,9 @@ def stock_trade(stock_file):
         print('*'*50)
         print(f"action: {action_name} amount: {trade_amount}")
         obs, rewards, done, info = env.step(action)
-        profit = env.render()
-        day_profits.append(profit)
         if done:
             break
-    return day_profits
+    return env.envs[0].profits
 
 
 def find_file(path, name):

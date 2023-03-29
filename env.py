@@ -23,6 +23,8 @@ class StockTradingEnv(gym.Env):
     def __init__(self, df):
         super(StockTradingEnv, self).__init__()
 
+        self.profits = []
+
         self.df = df
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
@@ -79,10 +81,14 @@ class StockTradingEnv(gym.Env):
 
         self.total_worth = self.balance + self.shares_held * price_after_trade
 
-        if self.total_worth <= 0:
-            done = True
+        # if self.total_worth <= 0:
+        #     done = True
 
         obs = self._next_observation()
+
+        profit = self.render()
+
+        self.profits.append(profit)
 
         return obs, reward, done, {}
 
